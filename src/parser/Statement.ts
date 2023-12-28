@@ -5,7 +5,7 @@ import type { BinaryExpression, NamespacedVariableNameExpression, FunctionExpres
 import { CallExpression, VariableExpression } from './Expression';
 import { util } from '../util';
 import type { Range } from 'vscode-languageserver';
-import type { BrsTranspileState } from './BrsTranspileState';
+import type { BrsTranspileState, ClassBrsTranspileState } from './BrsTranspileState';
 import { ParseMode } from './Parser';
 import type { WalkVisitor, WalkOptions } from '../astUtils/visitors';
 import { InternalWalkMode, walk, createVisitor, WalkMode, walkArray } from '../astUtils/visitors';
@@ -54,7 +54,7 @@ export class Body extends Statement implements TypedefProvider {
         //this needs to be a getter because the body has its statements pushed to it after being constructed
         return util.createBoundingRange(
             ...(this.statements ?? [])
-        );
+        ) ?? interpolatedRange; // If we have no statements, then our range is the start of an empty file
     }
 
     transpile(state: BrsTranspileState) {
@@ -119,7 +119,7 @@ export class AssignmentStatement extends Statement {
         readonly value: Expression
     ) {
         super();
-        this.range = util.createBoundingRange(name, equals, value);
+        this.range = util.createBoundingRangeNonOptional(name, equals, value);
     }
 
     public readonly range: Range;
@@ -456,7 +456,7 @@ export class IfStatement extends Statement {
 
                 if (body.length > 0) {
                     //zero or more spaces between the `else` and the `if`
-                    results.push(this.elseBranch.tokens.if.leadingWhitespace);
+                    results.push(this.elseBranch.tokens.if.leadingWhitespace ?? '');
                     results.push(...body);
 
                     // stop here because chained if will transpile the rest
@@ -467,7 +467,10 @@ export class IfStatement extends Statement {
 
             } else {
                 //else body
-                state.lineage.unshift(this.tokens.else);
+                //justification: We've already checked if we have an `else` branch. If we have the branch,
+                //we're guaranteed to have the token.
+                // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+                state.lineage.unshift(this.tokens.else!);
                 let body = this.elseBranch.transpile(state);
                 state.lineage.shift();
 
@@ -509,7 +512,7 @@ export class IncrementStatement extends Statement {
         readonly operator: Token
     ) {
         super();
-        this.range = util.createBoundingRange(
+        this.range = util.createBoundingRangeNonOptional(
             value,
             operator
         );
@@ -558,7 +561,7 @@ export class PrintStatement extends Statement {
         readonly expressions: Array<Expression | PrintSeparatorTab | PrintSeparatorSpace>
     ) {
         super();
-        this.range = util.createBoundingRange(
+        this.range = util.createBoundingRangeNonOptional(
             tokens.print,
             ...(expressions ?? [])
         );
@@ -605,7 +608,7 @@ export class DimStatement extends Statement {
         public closingSquare?: Token
     ) {
         super();
-        this.range = util.createBoundingRange(
+        this.range = util.createBoundingRangeNonOptional(
             dimToken,
             identifier,
             openingSquare,
@@ -650,7 +653,7 @@ export class GotoStatement extends Statement {
         }
     ) {
         super();
-        this.range = util.createBoundingRange(
+        this.range = util.createBoundingRangeNonOptional(
             tokens.goto,
             tokens.label
         );
@@ -679,7 +682,7 @@ export class LabelStatement extends Statement {
         }
     ) {
         super();
-        this.range = util.createBoundingRange(
+        this.range = util.createBoundingRangeNonOptional(
             tokens.identifier,
             tokens.colon
         );
@@ -708,7 +711,7 @@ export class ReturnStatement extends Statement {
         readonly value?: Expression
     ) {
         super();
-        this.range = util.createBoundingRange(
+        this.range = util.createBoundingRangeNonOptional(
             tokens.return,
             value
         );
@@ -717,7 +720,7 @@ export class ReturnStatement extends Statement {
     public readonly range: Range;
 
     transpile(state: BrsTranspileState) {
-        let result = [];
+        let result: TranspileResult = [];
         result.push(
             state.transpileToken(this.tokens.return)
         );
@@ -793,7 +796,7 @@ export class ForStatement extends Statement {
         public increment?: Expression
     ) {
         super();
-        this.range = util.createBoundingRange(
+        this.range = util.createBoundingRangeNonOptional(
             forToken,
             counterDeclaration,
             toToken,
@@ -808,7 +811,7 @@ export class ForStatement extends Statement {
     public readonly range: Range;
 
     transpile(state: BrsTranspileState) {
-        let result = [];
+        let result: TranspileResult = [];
         //for
         result.push(
             state.transpileToken(this.forToken),
@@ -878,7 +881,7 @@ export class ForEachStatement extends Statement {
         readonly body: Block
     ) {
         super();
-        this.range = util.createBoundingRange(
+        this.range = util.createBoundingRangeNonOptional(
             tokens.forEach,
             item,
             tokens.in,
@@ -891,7 +894,7 @@ export class ForEachStatement extends Statement {
     public readonly range: Range;
 
     transpile(state: BrsTranspileState) {
-        let result = [];
+        let result: TranspileResult = [];
         //for each
         result.push(
             state.transpileToken(this.tokens.forEach),
@@ -945,7 +948,7 @@ export class WhileStatement extends Statement {
         readonly body: Block
     ) {
         super();
-        this.range = util.createBoundingRange(
+        this.range = util.createBoundingRangeNonOptional(
             tokens.while,
             condition,
             body,
@@ -956,7 +959,7 @@ export class WhileStatement extends Statement {
     public readonly range: Range;
 
     transpile(state: BrsTranspileState) {
-        let result = [];
+        let result: TranspileResult = [];
         //while
         result.push(
             state.transpileToken(this.tokens.while),
@@ -1001,7 +1004,7 @@ export class DottedSetStatement extends Statement {
         readonly dot?: Token
     ) {
         super();
-        this.range = util.createBoundingRange(
+        this.range = util.createBoundingRangeNonOptional(
             obj,
             dot,
             name,
@@ -1046,7 +1049,7 @@ export class IndexedSetStatement extends Statement {
         readonly closingSquare: Token
     ) {
         super();
-        this.range = util.createBoundingRange(
+        this.range = util.createBoundingRangeNonOptional(
             obj,
             openingSquare,
             index,
@@ -1096,7 +1099,7 @@ export class LibraryStatement extends Statement implements TypedefProvider {
         }
     ) {
         super();
-        this.range = util.createBoundingRange(
+        this.range = util.createBoundingRangeNonOptional(
             this.tokens.library,
             this.tokens.filePath
         );
@@ -1105,7 +1108,7 @@ export class LibraryStatement extends Statement implements TypedefProvider {
     public readonly range: Range;
 
     transpile(state: BrsTranspileState) {
-        let result = [];
+        let result: TranspileResult = [];
         result.push(
             state.transpileToken(this.tokens.library)
         );
@@ -1149,7 +1152,7 @@ export class NamespaceStatement extends Statement implements TypedefProvider {
     public get range() {
         return this.cacheRange();
     }
-    private _range: Range;
+    private _range: Range | undefined;
 
     public cacheRange() {
         if (!this._range) {
@@ -1181,7 +1184,7 @@ export class NamespaceStatement extends Statement implements TypedefProvider {
     }
 
     getTypedef(state: BrsTranspileState) {
-        let result = [
+        let result: TranspileResult = [
             'namespace ',
             ...this.getName(ParseMode.BrighterScript),
             state.newline
@@ -1213,10 +1216,10 @@ export class NamespaceStatement extends Statement implements TypedefProvider {
 export class ImportStatement extends Statement implements TypedefProvider {
     constructor(
         readonly importToken: Token,
-        readonly filePathToken: Token
+        readonly filePathToken: Token | undefined
     ) {
         super();
-        this.range = util.createBoundingRange(
+        this.range = util.createBoundingRangeNonOptional(
             importToken,
             filePathToken
         );
@@ -1232,7 +1235,7 @@ export class ImportStatement extends Statement implements TypedefProvider {
             );
         }
     }
-    public filePath: string;
+    public filePath: string | undefined;
     public range: Range;
 
     transpile(state: BrsTranspileState) {
@@ -1277,7 +1280,7 @@ export class InterfaceStatement extends Statement implements TypedefProvider {
         this.tokens.name = name;
         this.tokens.extends = extendsToken;
         this.tokens.endInterface = endInterfaceToken;
-        this.range = util.createBoundingRange(
+        this.range = util.createBoundingRangeNonOptional(
             this.tokens.interface,
             this.tokens.name,
             this.tokens.extends,
@@ -1435,8 +1438,12 @@ export class InterfaceFieldStatement extends Statement implements TypedefProvide
         this.tokens.name = nameToken;
         this.tokens.as = asToken;
         this.tokens.type = typeToken;
-        this.range = util.createBoundingRange(
+        this.range = optionalToken ? util.createBoundingRangeNonOptional(
             optionalToken,
+            nameToken,
+            asToken,
+            typeToken
+        ) : util.createBoundingRangeNonOptional(
             nameToken,
             asToken,
             typeToken
@@ -1475,7 +1482,9 @@ export class InterfaceFieldStatement extends Statement implements TypedefProvide
         }
         if (this.isOptional) {
             result.push(
-                this.tokens.optional.text,
+                //justification: We've checked `this.isOptional` already. That will only be true when this token exists.
+                // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+                this.tokens.optional!.text,
                 ' '
             );
         }
@@ -1519,8 +1528,16 @@ export class InterfaceMethodStatement extends Statement implements TypedefProvid
     }
 
     public get range() {
-        return util.createBoundingRange(
+        return this.tokens.optional ? util.createBoundingRangeNonOptional(
             this.tokens.optional,
+            this.tokens.functionType,
+            this.tokens.name,
+            this.tokens.leftParen,
+            ...(this.params ?? []),
+            this.tokens.rightParen,
+            this.tokens.as,
+            this.tokens.returnType
+        ) : util.createBoundingRangeNonOptional(
             this.tokens.functionType,
             this.tokens.name,
             this.tokens.leftParen,
@@ -1537,8 +1554,8 @@ export class InterfaceMethodStatement extends Statement implements TypedefProvid
         name: Identifier;
         leftParen: Token;
         rightParen: Token;
-        as: Token;
-        returnType: Token;
+        as?: Token;
+        returnType?: Token;
     };
 
     public get isOptional() {
@@ -1561,7 +1578,9 @@ export class InterfaceMethodStatement extends Statement implements TypedefProvid
 
         if (this.isOptional) {
             result.push(
-                this.tokens.optional.text,
+                //justification: tokens.optional will always exist when `this.isOptional` is true
+                // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+                this.tokens.optional!.text,
                 ' '
             );
         }
@@ -1579,20 +1598,24 @@ export class InterfaceMethodStatement extends Statement implements TypedefProvid
             }
             const param = params[i];
             result.push(param.name.text);
-            if (param.typeToken?.text?.length > 0) {
+            const typeToken = param.typeToken;
+            const typeTokenLength = typeToken?.text?.length;
+            if (typeToken && typeTokenLength) {
                 result.push(
                     ' as ',
-                    param.typeToken.text
+                    typeToken.text
                 );
             }
         }
         result.push(
             ')'
         );
-        if (this.tokens.returnType?.text.length > 0) {
+        const returnTypeToken = this.tokens.returnType;
+        const returnTypeTokenLength = returnTypeToken?.text.length;
+        if (returnTypeToken && returnTypeTokenLength) {
             result.push(
                 ' as ',
-                this.tokens.returnType.text
+                returnTypeToken.text
             );
         }
         return result;
@@ -1621,11 +1644,11 @@ export class ClassStatement extends Statement implements TypedefProvider {
                 this.memberMap[statement?.name?.text.toLowerCase()] = statement;
             } else if (isFieldStatement(statement)) {
                 this.fields.push(statement);
-                this.memberMap[statement?.name?.text.toLowerCase()] = statement;
+                this.memberMap[statement?.name?.text.toLowerCase() ?? 'undefined'] = statement;
             }
         }
 
-        this.range = util.createBoundingRange(
+        this.range = util.createBoundingRangeNonOptional(
             classKeyword,
             name,
             extendsKeyword,
@@ -1643,8 +1666,13 @@ export class ClassStatement extends Statement implements TypedefProvider {
         return this.findAncestor<NamespaceStatement>(isNamespaceStatement)?.nameExpression;
     }
 
+    private getNameInternal(parseMode: ParseMode): string {
+        //justification: Properly instantiated, this class will always have a name.
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        return this.getName(parseMode)!;
+    }
 
-    public getName(parseMode: ParseMode) {
+    public getName(parseMode: ParseMode): string | undefined {
         const name = this.name?.text;
         if (name) {
             const namespace = this.findAncestor<NamespaceStatement>(isNamespaceStatement);
@@ -1668,7 +1696,7 @@ export class ClassStatement extends Statement implements TypedefProvider {
     public readonly range: Range;
 
     transpile(state: BrsTranspileState) {
-        let result = [];
+        let result: TranspileResult = [];
         //make the builder
         result.push(...this.getTranspiledBuilder(state));
         result.push(
@@ -1826,8 +1854,8 @@ export class ClassStatement extends Statement implements TypedefProvider {
      * without instantiating the parent constructor at that point in time.
      */
     private getTranspiledBuilder(state: BrsTranspileState) {
-        let result = [];
-        result.push(`function ${this.getBuilderName(this.getName(ParseMode.BrightScript))}()\n`);
+        let result: TranspileResult = [];
+        result.push(`function ${this.getBuilderName(this.getNameInternal(ParseMode.BrightScript))}()\n`);
         state.blockDepth++;
         //indent
         result.push(state.indent());
@@ -1841,7 +1869,7 @@ export class ClassStatement extends Statement implements TypedefProvider {
         if (ancestors[0]) {
             const ancestorNamespace = ancestors[0].findAncestor<NamespaceStatement>(isNamespaceStatement);
             let fullyQualifiedClassName = util.getFullyQualifiedClassName(
-                ancestors[0].getName(ParseMode.BrighterScript),
+                ancestors[0].getNameInternal(ParseMode.BrighterScript),
                 ancestorNamespace?.getName(ParseMode.BrighterScript)
             );
             result.push(
@@ -1922,14 +1950,14 @@ export class ClassStatement extends Statement implements TypedefProvider {
      * This invokes the builder, gets an instance of the class, then invokes the "new" function on that class.
      */
     private getTranspiledClassFunction(state: BrsTranspileState) {
-        let result = [];
+        let result: TranspileResult = [];
         const constructorFunction = this.getConstructorFunction();
         const constructorParams = constructorFunction ? constructorFunction.func.parameters : [];
 
         result.push(
             state.sourceNode(this.classKeyword, 'function'),
             state.sourceNode(this.classKeyword, ' '),
-            state.sourceNode(this.name, this.getName(ParseMode.BrightScript)),
+            state.sourceNode(this.name, this.getNameInternal(ParseMode.BrightScript)),
             `(`
         );
         let i = 0;
@@ -1949,7 +1977,7 @@ export class ClassStatement extends Statement implements TypedefProvider {
 
         state.blockDepth++;
         result.push(state.indent());
-        result.push(`instance = ${this.getBuilderName(this.getName(ParseMode.BrightScript))}()\n`);
+        result.push(`instance = ${this.getBuilderName(this.getNameInternal(ParseMode.BrightScript))}()\n`);
 
         result.push(state.indent());
         result.push(`instance.new(`);
@@ -1996,7 +2024,7 @@ const accessModifiers = [
 ];
 export class MethodStatement extends FunctionStatement {
     constructor(
-        modifiers: Token | Token[],
+        modifiers: Token | Token[] | undefined,
         name: Identifier,
         func: FunctionExpression,
         public override: Token
@@ -2009,11 +2037,22 @@ export class MethodStatement extends FunctionStatement {
                 this.modifiers.push(modifiers);
             }
         }
-        this.range = util.createBoundingRange(
-            ...(this.modifiers),
-            override,
-            func
-        );
+
+        const firstModifier: Token | undefined = this.modifiers[0];
+        if (firstModifier) {
+            this.range = util.createBoundingRangeNonOptional(
+                firstModifier,
+                ...(this.modifiers),
+                override,
+                func
+            );
+        } else {
+            this.range = util.createBoundingRangeNonOptional(
+                override,
+                func
+            );
+
+        }
     }
 
     public modifiers: Token[] = [];
@@ -2031,7 +2070,10 @@ export class MethodStatement extends FunctionStatement {
         return this.name.text;
     }
 
-    transpile(state: BrsTranspileState) {
+    transpile(rawState: BrsTranspileState) {
+        //this method will only be invoked when a class statement exists in the transpile state,
+        //so we add a coercion here to convince TS of this
+        const state = rawState as any as ClassBrsTranspileState;
         if (this.name.text.toLowerCase() === 'new') {
             this.ensureSuperConstructorCall(state);
             //TODO we need to undo this at the bottom of this method
@@ -2049,7 +2091,7 @@ export class MethodStatement extends FunctionStatement {
             DottedGetExpression: e => {
                 const beginningVariable = util.findBeginningVariableExpression(e);
                 const lowerName = beginningVariable?.getName(ParseMode.BrighterScript).toLowerCase();
-                if (lowerName === 'super') {
+                if (beginningVariable && lowerName === 'super') {
                     state.editor.setProperty(beginningVariable.name, 'text', 'm');
                     state.editor.setProperty(e.name, 'text', `super${parentClassIndex}_${e.name.text}`);
                 }
@@ -2091,7 +2133,7 @@ export class MethodStatement extends FunctionStatement {
      * All child classes must call the parent constructor. The type checker will warn users when they don't call it in their own class,
      * but we still need to call it even if they have omitted it. This injects the super call if it's missing
      */
-    private ensureSuperConstructorCall(state: BrsTranspileState) {
+    private ensureSuperConstructorCall(state: ClassBrsTranspileState) {
         //if this class doesn't extend another class, quit here
         if (state.classStatement.getAncestors(state).length === 0) {
             return;
@@ -2103,7 +2145,7 @@ export class MethodStatement extends FunctionStatement {
                 //is a call statement
                 return isExpressionStatement(x) && isCallExpression(x.expression) &&
                     //is a call to super
-                    util.findBeginningVariableExpression(x.expression.callee as any).name.text.toLowerCase() === 'super';
+                    util.findBeginningVariableExpression(x.expression.callee as any)?.name.text.toLowerCase() === 'super';
             }) !== -1;
 
         //if a call to super exists, quit here
@@ -2146,7 +2188,7 @@ export class MethodStatement extends FunctionStatement {
     /**
      * Inject field initializers at the top of the `new` function (after any present `super()` call)
      */
-    private injectFieldInitializersForConstructor(state: BrsTranspileState) {
+    private injectFieldInitializersForConstructor(state: ClassBrsTranspileState) {
         let startingIndex = state.classStatement.hasParentClass() ? 1 : 0;
 
         let newStatements = [] as Statement[];
@@ -2156,7 +2198,9 @@ export class MethodStatement extends FunctionStatement {
             thisQualifiedName.text = 'm.' + field.name.text;
             if (field.initialValue) {
                 newStatements.push(
-                    new AssignmentStatement(field.equal, thisQualifiedName, field.initialValue)
+                    //justification: field.equal will always exist if field.initialValue exists
+                    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+                    new AssignmentStatement(field.equal!, thisQualifiedName, field.initialValue)
                 );
             } else {
                 //if there is no initial value, set the initial value to `invalid`
@@ -2186,17 +2230,23 @@ export class ClassMethodStatement extends MethodStatement { }
 export class FieldStatement extends Statement implements TypedefProvider {
 
     constructor(
-        readonly accessModifier?: Token,
-        readonly name?: Identifier,
-        readonly as?: Token,
-        readonly type?: Token,
-        readonly equal?: Token,
-        readonly initialValue?: Expression,
-        readonly optional?: Token
+        readonly accessModifier: Token | undefined,
+        readonly name: Identifier,
+        readonly as: Token | undefined,
+        readonly type: Token | undefined,
+        readonly equal: Token | undefined,
+        readonly initialValue: Expression | undefined,
+        readonly optional: Token | undefined
     ) {
         super();
-        this.range = util.createBoundingRange(
+        this.range = accessModifier ? util.createBoundingRangeNonOptional(
             accessModifier,
+            name,
+            as,
+            type,
+            equal,
+            initialValue
+        ) : util.createBoundingRangeNonOptional(
             name,
             as,
             type,
@@ -2230,7 +2280,7 @@ export class FieldStatement extends Statement implements TypedefProvider {
     }
 
     getTypedef(state: BrsTranspileState) {
-        const result = [];
+        const result: TranspileResult = [];
         if (this.name) {
             for (let annotation of this.annotations ?? []) {
                 result.push(
@@ -2250,7 +2300,9 @@ export class FieldStatement extends Statement implements TypedefProvider {
                 ' '
             );
             if (this.isOptional) {
-                result.push(this.optional.text, ' ');
+                //justification: this.optional.text will always exist if this.isOptional is true
+                // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+                result.push(this.optional!.text, ' ');
             }
             result.push(this.name?.text,
                 ' as ',
@@ -2288,7 +2340,7 @@ export class TryCatchStatement extends Statement {
         public catchStatement?: CatchStatement
     ) {
         super();
-        this.range = util.createBoundingRange(
+        this.range = util.createBoundingRangeNonOptional(
             tokens.try,
             tryBranch,
             catchStatement,
@@ -2301,13 +2353,17 @@ export class TryCatchStatement extends Statement {
     public transpile(state: BrsTranspileState): TranspileResult {
         return [
             state.transpileToken(this.tokens.try),
-            ...this.tryBranch.transpile(state),
+            //justification: tryBranch will exist so long as the AST is well-formed
+            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+            ...this.tryBranch!.transpile(state),
             state.newline,
             state.indent(),
             ...(this.catchStatement?.transpile(state) ?? ['catch']),
             state.newline,
             state.indent(),
-            state.transpileToken(this.tokens.endTry)
+            //justification: endTry will exist so long as the AST is well-formed
+            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+            state.transpileToken(this.tokens.endTry!)
         ];
     }
 
@@ -2328,7 +2384,7 @@ export class CatchStatement extends Statement {
         public catchBranch?: Block
     ) {
         super();
-        this.range = util.createBoundingRange(
+        this.range = util.createBoundingRangeNonOptional(
             tokens.catch,
             exceptionVariable,
             catchBranch
@@ -2359,7 +2415,7 @@ export class ThrowStatement extends Statement {
         public expression?: Expression
     ) {
         super();
-        this.range = util.createBoundingRange(
+        this.range = util.createBoundingRangeNonOptional(
             throwToken,
             expression
         );
@@ -2408,7 +2464,7 @@ export class EnumStatement extends Statement implements TypedefProvider {
     }
 
     public get range(): Range {
-        return util.createBoundingRange(
+        return util.createBoundingRangeNonOptional(
             this.tokens.enum,
             this.tokens.name,
             ...this.body,
@@ -2567,7 +2623,7 @@ export class EnumMemberStatement extends Statement implements TypedefProvider {
     }
 
     public get range() {
-        return util.createBoundingRange(
+        return util.createBoundingRangeNonOptional(
             this.tokens.name,
             this.tokens.equal,
             this.value
@@ -2618,7 +2674,7 @@ export class ConstStatement extends Statement implements TypedefProvider {
         public value: Expression
     ) {
         super();
-        this.range = util.createBoundingRange(this.tokens.const, this.tokens.name, this.tokens.equals, this.value);
+        this.range = util.createBoundingRangeNonOptional(this.tokens.const, this.tokens.name, this.tokens.equals, this.value);
     }
 
     public range: Range;
@@ -2678,7 +2734,7 @@ export class ContinueStatement extends Statement {
         }
     ) {
         super();
-        this.range = util.createBoundingRange(
+        this.range = util.createBoundingRangeNonOptional(
             tokens.continue,
             tokens.loopType
         );

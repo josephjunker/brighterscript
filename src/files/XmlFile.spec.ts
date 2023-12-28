@@ -29,7 +29,7 @@ describe('XmlFile', () => {
         fsExtra.emptyDirSync(tempDir);
         fsExtra.ensureDirSync(rootDir);
         fsExtra.ensureDirSync(stagingDir);
-        program = new Program({ rootDir: rootDir });
+        program = new Program({ rootDir: rootDir } as any);
         file = new XmlFile(`${rootDir}/components/MainComponent.xml`, 'components/MainComponent.xml', program);
     });
     afterEach(() => {
@@ -331,7 +331,7 @@ describe('XmlFile', () => {
             program = new Program({
                 rootDir: rootDir,
                 autoImportComponentScript: true
-            });
+            } as any);
             program.setFile('components/comp1.xml', trim`
                 <?xml version="1.0" encoding="utf-8" ?>
                 <component name="ParentScene" extends="GrandparentScene">
@@ -570,7 +570,7 @@ describe('XmlFile', () => {
         program = new Program({
             autoImportComponentScript: true,
             rootDir: rootDir
-        });
+        } as any);
         program.setFile(`components/SimpleScene.bs`, '');
         program.setFile(`components/SimpleScene.xml`, trim`
             <?xml version="1.0" encoding="utf-8" ?>
@@ -908,7 +908,7 @@ describe('XmlFile', () => {
             const rootDir = process.cwd();
             const program = new Program({
                 rootDir: rootDir
-            });
+            } as any);
             program.plugins.add({
                 name: 'Transform plugins',
                 afterFileParse: file => validateXml(file as XmlFile)

@@ -26,7 +26,7 @@ export type WalkVisitor = <T = AstNode>(node: AstNode, parent?: AstNode, owner?:
 /**
  * A helper function for Statement and Expression `walkAll` calls.
  */
-export function walk<T>(owner: T, key: keyof T, visitor: WalkVisitor, options: WalkOptions, parent?: AstNode) {
+export function walk<T>(owner: T, key: keyof T, visitor: WalkVisitor | null, options: WalkOptions, parent?: AstNode) {
     //stop processing if canceled
     if (options.cancel?.isCancellationRequested) {
         return;
@@ -63,8 +63,13 @@ export function walk<T>(owner: T, key: keyof T, visitor: WalkVisitor, options: W
     }
 
     if (!element.walk) {
-        throw new Error(`${owner.constructor.name}["${String(key)}"]${parent ? ` for ${parent.constructor.name}` : ''} does not contain a "walk" method`);
+        throw new Error(`${(owner as any).constructor?.name}["${String(key)}"]${parent ? ` for ${parent.constructor.name}` : ''} does not contain a "walk" method`);
     }
+
+    if (!visitor) {
+        return;
+    }
+
     //walk the child expressions
     element.walk(visitor, options);
 }

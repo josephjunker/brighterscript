@@ -10,7 +10,7 @@ const fence = (code: string) => util.mdFence(code, 'brightscript');
 describe('HoverProcessor', () => {
     let program: Program;
     beforeEach(() => {
-        program = new Program({ rootDir: rootDir, sourceMap: true });
+        program = new Program({ rootDir: rootDir, sourceMap: true } as any);
     });
     afterEach(() => {
         sinon.restore();
@@ -122,7 +122,7 @@ describe('HoverProcessor', () => {
             let rootDir = process.cwd();
             program = new Program({
                 rootDir: rootDir
-            });
+            } as any);
 
             let mainFile = program.setFile('source/main.brs', `
                 sub Main()

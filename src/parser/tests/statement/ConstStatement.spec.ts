@@ -19,7 +19,7 @@ describe('ConstStatement', () => {
     let testGetTypedef = getTestGetTypedef(() => [program, rootDir]);
 
     beforeEach(() => {
-        program = new Program({ rootDir: rootDir, sourceMap: true });
+        program = new Program({ rootDir: rootDir, sourceMap: true } as any);
         parser = new Parser();
     });
     afterEach(() => {

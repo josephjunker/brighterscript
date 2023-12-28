@@ -237,7 +237,7 @@ export function expectInstanceOf<T>(items: any[], constructors: Array<new (...ar
 
 export function getTestTranspile(scopeGetter: () => [program: Program, rootDir: string]) {
     return getTestFileAction((file) => {
-        return file.program['_getTranspiledFileContents'](file);
+        return file.program['_getTranspiledFileContents'](file) as any;
     }, scopeGetter);
 }
 

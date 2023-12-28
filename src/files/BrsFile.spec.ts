@@ -40,7 +40,7 @@ describe('BrsFile', () => {
 
     beforeEach(() => {
         fsExtra.emptyDirSync(tempDir);
-        program = new Program({ rootDir: rootDir, sourceMap: true });
+        program = new Program({ rootDir: rootDir, sourceMap: true } as any);
         file = new BrsFile(srcPath, destPath, program);
     });
     afterEach(() => {
@@ -535,7 +535,7 @@ describe('BrsFile', () => {
             });
 
             it('supports disabling non-numeric error codes', () => {
-                const program = new Program({});
+                const program = new Program({} as any);
                 const file = program.setFile('source/main.brs', `
                     sub main()
                         something = true 'bs:disable-line: LINT1005
@@ -1965,7 +1965,7 @@ describe('BrsFile', () => {
             let rootDir = process.cwd();
             program = new Program({
                 rootDir: rootDir
-            });
+            } as any);
 
             let mainFile = program.setFile('source/main.brs', `
                 sub Main()
@@ -1994,7 +1994,7 @@ describe('BrsFile', () => {
             let rootDir = process.cwd();
             program = new Program({
                 rootDir: rootDir
-            });
+            } as any);
 
             let mainFile = program.setFile('source/main.brs', `
                 sub Main()
@@ -2024,7 +2024,7 @@ describe('BrsFile', () => {
             let rootDir = process.cwd();
             program = new Program({
                 rootDir: rootDir
-            });
+            } as any);
 
             const file = program.setFile('source/lib.brs', `
                 '
@@ -2936,7 +2936,7 @@ describe('BrsFile', () => {
             const rootDir = process.cwd();
             const program = new Program({
                 rootDir: rootDir
-            });
+            } as any);
             program.plugins.add({
                 name: 'transform callback',
                 afterFileParse: onParsed
@@ -2997,7 +2997,7 @@ describe('BrsFile', () => {
                 end sub
             `);
 
-            const sourceScope = program.getScopeByName('source');
+            const sourceScope = program.getScopeByName('source')!;
             const functionNames = sourceScope.getAllCallables().map(x => x.callable.name);
             expect(functionNames).to.include('main');
             expect(functionNames).not.to.include('speak');

@@ -16,7 +16,7 @@ export abstract class AstNode {
     /**
      *  The starting and ending location of the node.
      */
-    public abstract range: Range | undefined;
+    public abstract range: Range;
 
     public abstract transpile(state: BrsTranspileState): TranspileResult;
 

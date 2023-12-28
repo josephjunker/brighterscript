@@ -8,7 +8,7 @@ describe('UnaryExpression', () => {
     beforeEach(() => {
         program = new Program({
             rootDir: rootDir
-        });
+        } as any);
     });
 
     it('handles advanced cases', () => {

@@ -642,7 +642,7 @@ export class Parser {
         while (this.checkAny(TokenKind.Public, TokenKind.Protected, TokenKind.Private, TokenKind.Function, TokenKind.Sub, TokenKind.Comment, TokenKind.Identifier, TokenKind.At, ...AllowedProperties)) {
             try {
                 let decl: Statement;
-                let accessModifier: Token;
+                let accessModifier: Token | undefined;
 
                 if (this.check(TokenKind.At)) {
                     this.annotationExpression();
@@ -653,7 +653,7 @@ export class Parser {
                     accessModifier = this.advance();
                 }
 
-                let overrideKeyword: Token;
+                let overrideKeyword: Token | undefined;
                 if (this.peek().text.toLowerCase() === 'override') {
                     overrideKeyword = this.advance();
                 }
@@ -738,7 +738,7 @@ export class Parser {
 
     private fieldDeclaration(accessModifier: Token | null) {
 
-        let optionalKeyword = this.consumeTokenIf(TokenKind.Optional);
+        let optionalKeyword: Token | null | undefined = this.consumeTokenIf(TokenKind.Optional);
 
         if (this.checkAny(TokenKind.Identifier, ...AllowedProperties)) {
             if (this.check(TokenKind.As)) {
@@ -768,8 +768,8 @@ export class Parser {
             TokenKind.Identifier,
             ...AllowedProperties
         ) as Identifier;
-        let asToken: Token;
-        let fieldType: Token;
+        let asToken: Token | undefined;
+        let fieldType: Token | undefined;
         //look for `as SOME_TYPE`
         if (this.check(TokenKind.As)) {
             asToken = this.advance();
@@ -784,8 +784,8 @@ export class Parser {
             }
         }
 
-        let initialValue: Expression;
-        let equal: Token;
+        let initialValue: Expression | undefined;
+        let equal: Token | undefined;
         //if there is a field initializer
         if (this.check(TokenKind.Equal)) {
             equal = this.advance();
@@ -793,13 +793,13 @@ export class Parser {
         }
 
         return new FieldStatement(
-            accessModifier,
+            accessModifier ?? undefined,
             name,
             asToken,
             fieldType,
             equal,
             initialValue,
-            optionalKeyword
+            optionalKeyword ?? undefined
         );
     }
 
@@ -1580,10 +1580,10 @@ export class Parser {
         }
 
         let quasis = [] as TemplateStringQuasiExpression[];
-        let expressions = [];
+        let expressions = [] as Expression[];
         let openingBacktick = this.peek();
         this.advance();
-        let currentQuasiExpressionParts = [];
+        let currentQuasiExpressionParts = [] as Array<LiteralExpression | EscapedCharCodeLiteralExpression>;
         while (!this.isAtEnd() && !this.check(TokenKind.BackTick)) {
             let next = this.peek();
             if (next.kind === TokenKind.TemplateStringQuasi) {

@@ -14,7 +14,7 @@ describe('BrsFile', () => {
     beforeEach(() => {
         fsExtra.emptyDirSync(tempDir);
         const logger = new Logger(LogLevel.warn);
-        program = new Program({ rootDir: rootDir, sourceMap: true }, logger, new PluginInterface([], {
+        program = new Program({ rootDir: rootDir, sourceMap: true } as any, logger, new PluginInterface([], {
             logger: logger,
             suppressErrors: false
         }));

@@ -14,7 +14,7 @@ describe('SGParser', () => {
     let program: Program;
 
     beforeEach(() => {
-        program = new Program({ rootDir: rootDir, sourceMap: false });
+        program = new Program({ rootDir: rootDir, sourceMap: false } as any);
     });
     afterEach(() => {
         sinon.restore();

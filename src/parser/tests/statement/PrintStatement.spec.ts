@@ -15,7 +15,7 @@ describe('parser print statements', () => {
     beforeEach(() => {
         program = new Program({
             rootDir: rootDir
-        });
+        } as any);
     });
 
     it('parses singular print statements', () => {

@@ -13,7 +13,7 @@ import util from '../../util';
 describe('BrsFileValidator', () => {
     let program: Program;
     beforeEach(() => {
-        program = new Program({});
+        program = new Program({} as any);
     });
 
     it('links dotted get expression parents', () => {

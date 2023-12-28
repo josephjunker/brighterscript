@@ -14,7 +14,7 @@ describe('BrsFileSemanticTokensProcessor', () => {
     beforeEach(() => {
         program = new Program({
             rootDir: rootDir
-        });
+        } as any);
     });
     afterEach(() => {
         program.dispose();

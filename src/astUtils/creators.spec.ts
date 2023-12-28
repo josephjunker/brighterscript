@@ -23,7 +23,7 @@ describe('creators', () => {
 
     describe('interpolatedRange', () => {
         it('can be used in sourcemaps', () => {
-            const state = new TranspileState('source/main.brs', {});
+            const state = new TranspileState('source/main.brs', {} as any);
             const node = state.sourceNode({ range: interpolatedRange }, 'code');
             //should not crash
             node.toStringWithSourceMap();
