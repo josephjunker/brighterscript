@@ -1337,14 +1337,15 @@ export class Parser {
         //then this comment should be treated as a single-line comment
         let prev = this.previous();
         if (prev?.range.end.line === this.peek().range.start.line) {
-            return new CommentStatement([this.advance()]);
+            return new CommentStatement(this.advance(), []);
         } else {
-            let comments = [this.advance()];
+            let firstComment = this.advance();
+            let remainingComments: Token[] = [];
             while (this.check(TokenKind.Newline) && this.checkNext(TokenKind.Comment)) {
                 this.advance();
-                comments.push(this.advance());
+                remainingComments.push(this.advance());
             }
-            return new CommentStatement(comments);
+            return new CommentStatement(firstComment, remainingComments);
         }
     }
 
@@ -2659,7 +2660,7 @@ export class Parser {
                 return this.regexLiteralExpression();
 
             case this.check(TokenKind.Comment):
-                return new CommentStatement([this.advance()]);
+                return new CommentStatement(this.advance(), []);
 
             default:
                 //if we found an expected terminator, don't throw a diagnostic...just return undefined
@@ -2683,7 +2684,7 @@ export class Parser {
 
         //add any comment found right after the opening square
         if (this.check(TokenKind.Comment)) {
-            elements.push(new CommentStatement([this.advance()]));
+            elements.push(new CommentStatement(this.advance(), []));
         }
 
         while (this.match(TokenKind.Newline)) {
@@ -2697,7 +2698,7 @@ export class Parser {
                 while (this.matchAny(TokenKind.Comma, TokenKind.Newline, TokenKind.Comment)) {
                     if (this.checkPrevious(TokenKind.Comment) || this.check(TokenKind.Comment)) {
                         let comment = this.check(TokenKind.Comment) ? this.advance() : this.previous();
-                        elements.push(new CommentStatement([comment]));
+                        elements.push(new CommentStatement(comment, []));
                     }
                     while (this.match(TokenKind.Newline)) {
 
@@ -2762,7 +2763,7 @@ export class Parser {
             try {
                 if (this.check(TokenKind.Comment)) {
                     lastAAMember = null;
-                    members.push(new CommentStatement([this.advance()]));
+                    members.push(new CommentStatement(this.advance(), []));
                 } else {
                     let k = key();
                     let expr = this.expression();
@@ -2783,7 +2784,7 @@ export class Parser {
                     //check for comment at the end of the current line
                     if (this.check(TokenKind.Comment) || this.checkPrevious(TokenKind.Comment)) {
                         let token = this.checkPrevious(TokenKind.Comment) ? this.previous() : this.advance();
-                        members.push(new CommentStatement([token]));
+                        members.push(new CommentStatement(token, []));
                     } else {
                         this.consumeStatementSeparators(true);
 
@@ -2791,7 +2792,7 @@ export class Parser {
                         if (this.check(TokenKind.Comment) || this.checkPrevious(TokenKind.Comment)) {
                             let token = this.checkPrevious(TokenKind.Comment) ? this.previous() : this.advance();
                             lastAAMember = null;
-                            members.push(new CommentStatement([token]));
+                            members.push(new CommentStatement(token, []));
                             continue;
                         }
 

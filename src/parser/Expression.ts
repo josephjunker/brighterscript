@@ -66,7 +66,7 @@ export class CallExpression extends Expression {
         unused?: any
     ) {
         super();
-        this.range = util.createBoundingRange(this.callee, this.openingParen, ...args, this.closingParen);
+        this.range = util.createBoundingRangeNonOptional(this.callee, this.openingParen, ...args, this.closingParen);
     }
 
     public readonly range: Range;
@@ -196,22 +196,34 @@ export class FunctionExpression extends Expression implements TypedefProvider {
      * and ending with the last n' in 'end function' or 'b' in 'end sub'
      */
     public get range() {
-        return util.createBoundingRange(
-            this.functionType, this.leftParen,
+        if (this.functionType) {
+            return util.createBoundingRangeNonOptional(
+                this.functionType, this.leftParen,
+                ...this.parameters,
+                this.rightParen,
+                this.asToken,
+                this.returnTypeToken,
+                this.end
+            );
+        }
+        return util.createBoundingRangeNonOptional(
+            this.leftParen,
             ...this.parameters,
             this.rightParen,
-            this.asToken,
-            this.returnTypeToken,
+            this.asToken ?? { range: undefined },
+            this.returnTypeToken ?? { range: undefined },
             this.end
         );
     }
 
     transpile(state: BrsTranspileState, name?: Identifier, includeBody = true) {
-        let results = [];
-        //'function'|'sub'
-        results.push(
-            state.transpileToken(this.functionType)
-        );
+        let results: Array<string | SourceNode> = [];
+        if (this.functionType !== null) {
+            //'function'|'sub'
+            results.push(
+                state.transpileToken(this.functionType)
+            );
+        }
         //functionName?
         if (name) {
             results.push(
@@ -309,7 +321,7 @@ export class FunctionExpression extends Expression implements TypedefProvider {
 
     getFunctionType(): FunctionType {
         let functionType = new FunctionType(this.returnType);
-        functionType.isSub = this.functionType.text === 'sub';
+        functionType.isSub = this.functionType?.text === 'sub';
         for (let param of this.parameters) {
             functionType.addParameter(param.name.text, param.type, !!param.typeToken);
         }
@@ -335,12 +347,7 @@ export class FunctionParameterExpression extends Expression {
     public type: BscType;
 
     public get range(): Range {
-        return util.createBoundingRange(
-            this.name,
-            this.asToken,
-            this.typeToken,
-            this.defaultValue
-        );
+        return util.createBoundingRangeNonOptional(this.name, this.asToken, this.typeToken, this.defaultValue);
     }
 
     public transpile(state: BrsTranspileState) {
@@ -484,7 +491,7 @@ export class XmlAttributeGetExpression extends Expression {
         readonly at: Token
     ) {
         super();
-        this.range = util.createBoundingRange(this.obj, this.at, this.name);
+        this.range = util.createBoundingRangeNonOptional(this.obj, this.at, this.name);
     }
 
     public readonly range: Range;
@@ -516,7 +523,7 @@ export class IndexedGetExpression extends Expression {
         public questionDotToken?: Token //  ? or ?.
     ) {
         super();
-        this.range = util.createBoundingRange(this.obj, this.openingSquare, this.questionDotToken, this.openingSquare, this.index, this.closingSquare);
+        this.range = util.createBoundingRangeNonOptional(this.obj, this.openingSquare, this.questionDotToken, this.openingSquare, this.index, this.closingSquare);
     }
 
     public readonly range: Range;
@@ -548,7 +555,7 @@ export class GroupingExpression extends Expression {
         public expression: Expression
     ) {
         super();
-        this.range = util.createBoundingRange(this.tokens.left, this.expression, this.tokens.right);
+        this.range = util.createBoundingRangeNonOptional(this.tokens.left, this.expression, this.tokens.right);
     }
 
     public readonly range: Range;
@@ -643,13 +650,13 @@ export class ArrayLiteralExpression extends Expression {
         readonly hasSpread = false
     ) {
         super();
-        this.range = util.createBoundingRange(this.open, ...this.elements, this.close);
+        this.range = util.createBoundingRangeNonOptional(this.open, ...this.elements, this.close);
     }
 
     public readonly range: Range;
 
     transpile(state: BrsTranspileState) {
-        let result = [];
+        let result: Array<string | SourceNode> = [];
         result.push(
             state.transpileToken(this.open)
         );

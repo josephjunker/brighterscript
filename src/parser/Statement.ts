@@ -91,7 +91,7 @@ export class Body extends Statement implements TypedefProvider {
     }
 
     getTypedef(state: BrsTranspileState) {
-        let result = [];
+        let result: Array<string | SourceNode> = [];
         for (const statement of this.statements) {
             //if the current statement supports generating typedef, call it
             if (isTypedefProvider(statement)) {
@@ -160,7 +160,7 @@ export class Block extends Statement {
         readonly startingRange: Range
     ) {
         super();
-        this.range = util.createBoundingRange(
+        this.range = util.createBoundingRangeNonOptional(
             { range: this.startingRange },
             ...(statements ?? [])
         );
@@ -231,16 +231,16 @@ export class ExpressionStatement extends Statement {
 
 export class CommentStatement extends Statement implements Expression, TypedefProvider {
     constructor(
-        public comments: Token[]
+        firstComment: Token,
+        remainingComments: Token[]
     ) {
         super();
+        this.comments = [firstComment, ...remainingComments];
         this.visitMode = InternalWalkMode.visitStatements | InternalWalkMode.visitExpressions;
-        if (this.comments?.length > 0) {
-            this.range = util.createBoundingRange(
-                ...this.comments
-            );
-        }
+        this.range = util.createBoundingRangeNonOptional(firstComment, ...remainingComments);
     }
+
+    public comments: Token[];
 
     public range: Range;
 
@@ -249,7 +249,7 @@ export class CommentStatement extends Statement implements Expression, TypedefPr
     }
 
     transpile(state: BrsTranspileState) {
-        let result = [];
+        let result: Array<string | SourceNode> = [];
         for (let i = 0; i < this.comments.length; i++) {
             let comment = this.comments[i];
             if (i > 0) {
@@ -366,7 +366,7 @@ export class FunctionStatement extends Statement implements TypedefProvider {
     }
 
     getTypedef(state: BrsTranspileState) {
-        let result = [];
+        let result: TranspileResult = [];
         for (let annotation of this.annotations ?? []) {
             result.push(
                 ...annotation.getTypedef(state),
@@ -402,7 +402,7 @@ export class IfStatement extends Statement {
         readonly isInline?: boolean
     ) {
         super();
-        this.range = util.createBoundingRange(
+        this.range = util.createBoundingRangeNonOptional(
             tokens.if,
             condition,
             tokens.then,
@@ -415,7 +415,7 @@ export class IfStatement extends Statement {
     public readonly range: Range;
 
     transpile(state: BrsTranspileState) {
-        let results = [];
+        let results: TranspileResult = [];
         //if   (already indented by block)
         results.push(state.transpileToken(this.tokens.if));
         results.push(' ');

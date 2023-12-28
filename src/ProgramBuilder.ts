@@ -1,7 +1,7 @@
 import * as debounce from 'debounce-promise';
 import * as path from 'path';
 import { rokuDeploy } from 'roku-deploy';
-import type { BsConfig } from './BsConfig';
+import type { BsConfig, FinalizedBsConfig } from './BsConfig';
 import type { BscFile, BsDiagnostic, FileObj, FileResolver } from './interfaces';
 import { Program } from './Program';
 import { standardizePath as s, util } from './util';
@@ -27,16 +27,25 @@ export class ProgramBuilder {
                 return value.toString();
             });
         });
+        //default settings; we receive the real config via the `run` method
+        this.options = util.normalizeAndResolveConfig({});
     }
     /**
      * Determines whether the console should be cleared after a run (true for cli, false for languageserver)
      */
     public allowConsoleClearing = true;
 
-    public options: BsConfig;
+    public options: FinalizedBsConfig;
     private isRunning = false;
-    private watcher: Watcher;
-    public program: Program;
+    private watcher: Watcher | undefined;
+
+    /**
+     * `program` is only available after `ProgramBuilder.run()` is executed.
+     * Invoking methods which depend on it before running the builder will result in
+     * an exception being thrown.
+     */
+    public program: Program = undefined as any;
+
     public logger = new Logger();
     public plugins: PluginInterface = new PluginInterface([], { logger: this.logger });
     private fileResolvers = [] as FileResolver[];
@@ -68,7 +77,7 @@ export class ProgramBuilder {
     private staticDiagnostics = [] as BsDiagnostic[];
 
     public addDiagnostic(srcPath: string, diagnostic: Partial<BsDiagnostic>) {
-        let file: BscFile = this.program.getFile(srcPath);
+        let file: BscFile | undefined = this.program.getFile(srcPath);
         if (!file) {
             file = {
                 pkgPath: this.program.getPkgPath(srcPath),
@@ -179,7 +188,7 @@ export class ProgramBuilder {
      * A handle for the watch mode interval that keeps the process alive.
      * We need this so we can clear it if the builder is disposed
      */
-    private watchInterval: NodeJS.Timer;
+    private watchInterval: NodeJS.Timer | undefined;
 
     public enableWatchMode() {
         this.watcher = new Watcher(this.options);
@@ -415,7 +424,11 @@ export class ProgramBuilder {
             });
 
             //get every file referenced by the files array
-            let fileMap = await rokuDeploy.getFilePaths(options.files, options.rootDir);
+
+            //justification: these values came out of rokuDeploy and are going back into it. We trust that
+            //rokuDeploy knows what it is doing.
+            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+            let fileMap = await rokuDeploy.getFilePaths(options.files!, options.rootDir!);
 
             //remove files currently loaded in the program, we will transpile those instead (even if just for source maps)
             let filteredFileMap = [] as FileObj[];
@@ -426,6 +439,7 @@ export class ProgramBuilder {
             }
 
             this.plugins.emit('beforePrepublish', this, filteredFileMap);
+
 
             await this.logger.time(LogLevel.log, ['Copying to staging directory'], async () => {
                 //prepublish all non-program-loaded files to staging
@@ -440,7 +454,10 @@ export class ProgramBuilder {
 
             await this.logger.time(LogLevel.log, ['Transpiling'], async () => {
                 //transpile any brighterscript files
-                await this.program.transpile(fileMap, options.stagingDir);
+                //justification: RokuDeploy does set a default value for options.stagingDir,
+                //even though its return value says that it's optional
+                // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+                await this.program.transpile(fileMap, options.stagingDir!);
             });
 
             this.plugins.emit('afterPublish', this, fileMap);

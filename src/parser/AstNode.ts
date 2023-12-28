@@ -16,7 +16,7 @@ export abstract class AstNode {
     /**
      *  The starting and ending location of the node.
      */
-    public abstract range: Range;
+    public abstract range: Range | undefined;
 
     public abstract transpile(state: BrsTranspileState): TranspileResult;
 
@@ -143,4 +143,5 @@ export abstract class Expression extends AstNode {
      * When being considered by the walk visitor, this describes what type of element the current class is.
      */
     public visitMode = InternalWalkMode.visitExpressions;
+    public abstract range: Range;
 }
