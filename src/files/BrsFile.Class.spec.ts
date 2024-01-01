@@ -25,7 +25,7 @@ describe('BrsFile BrighterScript classes', () => {
     beforeEach(() => {
         fsExtra.ensureDirSync(rootDir);
         fsExtra.emptyDirSync(tempDir);
-        program = new Program({ rootDir: rootDir, stagingDir: stagingDir });
+        program = new Program({ rootDir: rootDir, stagingDir: stagingDir } as any);
     });
     afterEach(() => {
         sinon.restore();

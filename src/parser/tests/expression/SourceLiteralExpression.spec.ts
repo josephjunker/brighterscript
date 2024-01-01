@@ -9,7 +9,7 @@ describe('SourceLiteralExpression', () => {
     let testTranspile = getTestTranspile(() => [program, rootDir]);
 
     beforeEach(() => {
-        program = new Program({ rootDir: rootDir });
+        program = new Program({ rootDir: rootDir } as any);
     });
     afterEach(() => {
         program.dispose();
@@ -181,7 +181,7 @@ describe('SourceLiteralExpression', () => {
             program = new Program({
                 rootDir: rootDir,
                 sourceRoot: sourceRoot
-            });
+            } as any);
             testTranspile(`
                 sub main()
                     print SOURCE_FILE_PATH
@@ -198,7 +198,7 @@ describe('SourceLiteralExpression', () => {
             program = new Program({
                 rootDir: rootDir,
                 sourceRoot: sourceRoot
-            });
+            } as any);
             testTranspile(`
                 sub main()
                     print SOURCE_LOCATION

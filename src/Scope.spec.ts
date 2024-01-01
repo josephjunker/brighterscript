@@ -20,7 +20,7 @@ describe('Scope', () => {
     beforeEach(() => {
         program = new Program({
             rootDir: rootDir
-        });
+        } as any);
         program.createSourceScope();
     });
     afterEach(() => {
@@ -153,12 +153,12 @@ describe('Scope', () => {
     });
 
     it('allows adding diagnostics', () => {
-        const source = program.getScopeByName('source');
+        const source = program.getScopeByName('source')!;
         const expected = [{
             message: 'message',
             file: undefined,
             range: undefined
-        }];
+        }] as any;
         source.addDiagnostics(expected);
         expectDiagnostics(source, expected);
     });
@@ -170,7 +170,7 @@ describe('Scope', () => {
 
     describe('addFile', () => {
         it('detects callables from all loaded files', () => {
-            const sourceScope = program.getScopeByName('source');
+            const sourceScope = program.getScopeByName('source')!;
 
             program.setFile(`source/main.brs`, `
                 sub Main()
@@ -199,7 +199,7 @@ describe('Scope', () => {
         it('picks up new callables', () => {
             program.setFile('source/file.brs', '');
             //we have global callables, so get that initial number
-            let originalLength = program.getScopeByName('source').getAllCallables().length;
+            let originalLength = program.getScopeByName('source')!.getAllCallables().length;
 
             program.setFile('source/file.brs', `
                 function DoA()
@@ -210,7 +210,7 @@ describe('Scope', () => {
                     print "A"
                 end function
             `);
-            expect(program.getScopeByName('source').getAllCallables().length).to.equal(originalLength + 2);
+            expect(program.getScopeByName('source')!.getAllCallables().length).to.equal(originalLength + 2);
         });
     });
 
@@ -222,11 +222,11 @@ describe('Scope', () => {
                     print "A"
                 end function
             `);
-            let initCallableCount = program.getScopeByName('source').getAllCallables().length;
+            let initCallableCount = program.getScopeByName('source')!.getAllCallables().length;
 
             //remove the file
             program.removeFile(file.srcPath);
-            expect(program.getScopeByName('source').getAllCallables().length).to.equal(initCallableCount - 1);
+            expect(program.getScopeByName('source')!.getAllCallables().length).to.equal(initCallableCount - 1);
         });
     });
 
@@ -1405,7 +1405,7 @@ describe('Scope', () => {
             });
 
             it('scopes types to correct scope', () => {
-                program = new Program({ rootDir: rootDir });
+                program = new Program({ rootDir: rootDir } as any);
 
                 program.setFile('components/foo.xml', trim`
                     <?xml version="1.0" encoding="utf-8" ?>
@@ -1439,7 +1439,7 @@ describe('Scope', () => {
             });
 
             it('can reference types from parent component', () => {
-                program = new Program({ rootDir: rootDir });
+                program = new Program({ rootDir: rootDir } as any);
 
                 program.setFile('components/parent.xml', trim`
                     <?xml version="1.0" encoding="utf-8" ?>
@@ -1472,7 +1472,7 @@ describe('Scope', () => {
 
     describe('inheritance', () => {
         it('inherits callables from parent', () => {
-            program = new Program({ rootDir: rootDir });
+            program = new Program({ rootDir: rootDir } as any);
 
             program.setFile('components/child.xml', trim`
                 <?xml version="1.0" encoding="utf-8" ?>
@@ -1510,7 +1510,7 @@ describe('Scope', () => {
     describe('getDefinition', () => {
         it('returns empty list when there are no files', () => {
             let file = program.setFile('source/main.brs', '');
-            let scope = program.getScopeByName('source');
+            let scope = program.getScopeByName('source')!;
             expect(scope.getDefinition(file, Position.create(0, 0))).to.be.lengthOf(0);
         });
     });
@@ -1580,7 +1580,7 @@ describe('Scope', () => {
             program.validate();
 
             expect(
-                [...sourceScope.getEnumMap().keys()]
+                [...sourceScope!.getEnumMap().keys()]
             ).to.eql([
                 'foo',
                 'test.foo2',

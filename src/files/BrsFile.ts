@@ -1265,7 +1265,7 @@ export class BrsFile {
                 let scopes = this.program.getScopesForFile(this);
                 for (let scope of scopes) {
                     let namespace = scope.namespaceLookup.get(namespaceName.toLowerCase());
-                    if (namespace.functionStatements[lowerCalleeName]) {
+                    if (namespace?.functionStatements[lowerCalleeName]) {
                         return true;
                     }
                 }

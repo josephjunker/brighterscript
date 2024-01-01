@@ -9,7 +9,7 @@ describe('InterfaceStatement', () => {
     beforeEach(() => {
         program = new Program({
             rootDir: rootDir
-        });
+        } as any);
     });
 
     it('allows strange keywords as property names', () => {

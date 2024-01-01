@@ -642,7 +642,7 @@ export class Parser {
         while (this.checkAny(TokenKind.Public, TokenKind.Protected, TokenKind.Private, TokenKind.Function, TokenKind.Sub, TokenKind.Comment, TokenKind.Identifier, TokenKind.At, ...AllowedProperties)) {
             try {
                 let decl: Statement;
-                let accessModifier: Token;
+                let accessModifier: Token | undefined;
 
                 if (this.check(TokenKind.At)) {
                     this.annotationExpression();
@@ -653,7 +653,7 @@ export class Parser {
                     accessModifier = this.advance();
                 }
 
-                let overrideKeyword: Token;
+                let overrideKeyword: Token | undefined;
                 if (this.peek().text.toLowerCase() === 'override') {
                     overrideKeyword = this.advance();
                 }
@@ -738,7 +738,7 @@ export class Parser {
 
     private fieldDeclaration(accessModifier: Token | null) {
 
-        let optionalKeyword = this.consumeTokenIf(TokenKind.Optional);
+        let optionalKeyword: Token | null | undefined = this.consumeTokenIf(TokenKind.Optional);
 
         if (this.checkAny(TokenKind.Identifier, ...AllowedProperties)) {
             if (this.check(TokenKind.As)) {
@@ -768,8 +768,8 @@ export class Parser {
             TokenKind.Identifier,
             ...AllowedProperties
         ) as Identifier;
-        let asToken: Token;
-        let fieldType: Token;
+        let asToken: Token | undefined;
+        let fieldType: Token | undefined;
         //look for `as SOME_TYPE`
         if (this.check(TokenKind.As)) {
             asToken = this.advance();
@@ -784,8 +784,8 @@ export class Parser {
             }
         }
 
-        let initialValue: Expression;
-        let equal: Token;
+        let initialValue: Expression | undefined;
+        let equal: Token | undefined;
         //if there is a field initializer
         if (this.check(TokenKind.Equal)) {
             equal = this.advance();
@@ -793,13 +793,13 @@ export class Parser {
         }
 
         return new FieldStatement(
-            accessModifier,
+            accessModifier ?? undefined,
             name,
             asToken,
             fieldType,
             equal,
             initialValue,
-            optionalKeyword
+            optionalKeyword ?? undefined
         );
     }
 
@@ -1337,14 +1337,15 @@ export class Parser {
         //then this comment should be treated as a single-line comment
         let prev = this.previous();
         if (prev?.range.end.line === this.peek().range.start.line) {
-            return new CommentStatement([this.advance()]);
+            return new CommentStatement(this.advance(), []);
         } else {
-            let comments = [this.advance()];
+            let firstComment = this.advance();
+            let remainingComments: Token[] = [];
             while (this.check(TokenKind.Newline) && this.checkNext(TokenKind.Comment)) {
                 this.advance();
-                comments.push(this.advance());
+                remainingComments.push(this.advance());
             }
-            return new CommentStatement(comments);
+            return new CommentStatement(firstComment, remainingComments);
         }
     }
 
@@ -1579,10 +1580,10 @@ export class Parser {
         }
 
         let quasis = [] as TemplateStringQuasiExpression[];
-        let expressions = [];
+        let expressions = [] as Expression[];
         let openingBacktick = this.peek();
         this.advance();
-        let currentQuasiExpressionParts = [];
+        let currentQuasiExpressionParts = [] as Array<LiteralExpression | EscapedCharCodeLiteralExpression>;
         while (!this.isAtEnd() && !this.check(TokenKind.BackTick)) {
             let next = this.peek();
             if (next.kind === TokenKind.TemplateStringQuasi) {
@@ -2659,7 +2660,7 @@ export class Parser {
                 return this.regexLiteralExpression();
 
             case this.check(TokenKind.Comment):
-                return new CommentStatement([this.advance()]);
+                return new CommentStatement(this.advance(), []);
 
             default:
                 //if we found an expected terminator, don't throw a diagnostic...just return undefined
@@ -2683,7 +2684,7 @@ export class Parser {
 
         //add any comment found right after the opening square
         if (this.check(TokenKind.Comment)) {
-            elements.push(new CommentStatement([this.advance()]));
+            elements.push(new CommentStatement(this.advance(), []));
         }
 
         while (this.match(TokenKind.Newline)) {
@@ -2697,7 +2698,7 @@ export class Parser {
                 while (this.matchAny(TokenKind.Comma, TokenKind.Newline, TokenKind.Comment)) {
                     if (this.checkPrevious(TokenKind.Comment) || this.check(TokenKind.Comment)) {
                         let comment = this.check(TokenKind.Comment) ? this.advance() : this.previous();
-                        elements.push(new CommentStatement([comment]));
+                        elements.push(new CommentStatement(comment, []));
                     }
                     while (this.match(TokenKind.Newline)) {
 
@@ -2762,7 +2763,7 @@ export class Parser {
             try {
                 if (this.check(TokenKind.Comment)) {
                     lastAAMember = null;
-                    members.push(new CommentStatement([this.advance()]));
+                    members.push(new CommentStatement(this.advance(), []));
                 } else {
                     let k = key();
                     let expr = this.expression();
@@ -2783,7 +2784,7 @@ export class Parser {
                     //check for comment at the end of the current line
                     if (this.check(TokenKind.Comment) || this.checkPrevious(TokenKind.Comment)) {
                         let token = this.checkPrevious(TokenKind.Comment) ? this.previous() : this.advance();
-                        members.push(new CommentStatement([token]));
+                        members.push(new CommentStatement(token, []));
                     } else {
                         this.consumeStatementSeparators(true);
 
@@ -2791,7 +2792,7 @@ export class Parser {
                         if (this.check(TokenKind.Comment) || this.checkPrevious(TokenKind.Comment)) {
                             let token = this.checkPrevious(TokenKind.Comment) ? this.previous() : this.advance();
                             lastAAMember = null;
-                            members.push(new CommentStatement([token]));
+                            members.push(new CommentStatement(token, []));
                             continue;
                         }
 

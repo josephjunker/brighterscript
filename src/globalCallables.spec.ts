@@ -10,7 +10,7 @@ describe('globalCallables', () => {
         program = new Program({
             rootDir: rootDir,
             stagingDir: stagingDir
-        });
+        } as any);
     });
     afterEach(() => {
         program.dispose();

@@ -9,7 +9,7 @@ describe('RegexLiteralExpression', () => {
     let testTranspile = getTestTranspile(() => [program, rootDir]);
 
     beforeEach(() => {
-        program = new Program({ rootDir: rootDir });
+        program = new Program({ rootDir: rootDir } as any);
     });
     afterEach(() => {
         program.dispose();

@@ -15,7 +15,7 @@ describe('CodeActionsProcessor', () => {
         program = new Program({
             rootDir: rootDir,
             autoImportComponentScript: true
-        });
+        } as any);
     });
     afterEach(() => {
         program.dispose();

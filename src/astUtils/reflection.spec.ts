@@ -14,7 +14,7 @@ import { createVariableExpression } from '..';
 describe('reflection', () => {
     describe('Files', () => {
         it('recognizes files', () => {
-            const program = new Program({});
+            const program = new Program({} as any);
             const file = new BrsFile('path/to/source/file.brs', 'pkg:/source/file.brs', program);
             const comp = new XmlFile('path/to/components/file.xml', 'pkg:/components/file.brs', program);
             expect(isBrsFile(file)).to.be.true;
@@ -29,10 +29,10 @@ describe('reflection', () => {
         const expr = createStringLiteral('', range);
         const token = createToken(TokenKind.StringLiteral, '', range);
         const body = new Body([]);
-        const assignment = new AssignmentStatement(undefined, ident, expr);
+        const assignment = new AssignmentStatement(undefined as any, ident, expr);
         const block = new Block([], range);
         const expression = new ExpressionStatement(expr);
-        const comment = new CommentStatement([token]);
+        const comment = new CommentStatement(token, []);
         const exitFor = new ExitForStatement({ exitFor: token });
         const exitWhile = new ExitWhileStatement({ exitWhile: token });
         const funs = new FunctionStatement(ident, new FunctionExpression([], block, token, token, token, token));
@@ -270,7 +270,7 @@ describe('reflection', () => {
             expect(isAALiteralExpression(fun)).to.be.false;
         });
         it('isUnaryExpression', () => {
-            expect(isUnaryExpression(unary)).to.be.true;
+            expect(isUnaryExpression(unary as any)).to.be.true;
             expect(isUnaryExpression(fun)).to.be.false;
         });
         it('isVariableExpression', () => {

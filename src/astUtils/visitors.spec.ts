@@ -77,7 +77,7 @@ describe('astUtils visitors', () => {
     `;
 
     beforeEach(() => {
-        program = new Program({ rootDir: rootDir });
+        program = new Program({ rootDir: rootDir } as any);
     });
     afterEach(() => {
         program.dispose();
@@ -86,8 +86,8 @@ describe('astUtils visitors', () => {
     function functionsWalker(visitor: (statement: Statement, parent: Statement) => void, cancel?: CancellationToken) {
         return (file: BrsFile) => {
             file.parser.references.functionExpressions.some(functionExpression => {
-                visitor(functionExpression.body, undefined);
-                walkStatements(functionExpression.body, (statement, parent) => visitor(statement, parent), cancel);
+                visitor(functionExpression.body, undefined as any);
+                walkStatements(functionExpression.body, (statement, parent) => visitor(statement, parent as any), cancel);
                 return cancel?.isCancellationRequested;
             });
         };
@@ -274,12 +274,12 @@ describe('astUtils visitors', () => {
 
     describe('Expressions', () => {
         it('Walks through all expressions', () => {
-            const actual = [];
+            const actual: string[] = [];
             let curr: { statement: Statement; depth: number };
             const statementVisitor = createStackedVisitor((statement: Statement, stack: Statement[]) => {
                 curr = { statement: statement, depth: stack.length };
             });
-            function expressionVisitor(expression: Expression, _: AstNode) {
+            function expressionVisitor(expression: Expression, _: AstNode | undefined) {
                 const { statement, depth } = curr;
                 actual.push(`${statement.constructor.name}:${depth}:${expression.constructor.name}`);
             }
@@ -343,7 +343,7 @@ describe('astUtils visitors', () => {
     describe('walk', () => {
         function testWalk(text: string, expectedConstructors: string[], walkMode = WalkMode.visitAllRecursive) {
             const file = program.setFile<BrsFile>('source/main.bs', text);
-            const items = [];
+            const items = [] as any[];
             let index = 1;
             file.ast.walk((element: any) => {
                 element._testId = index++;
@@ -1025,7 +1025,7 @@ describe('astUtils visitors', () => {
         });
 
         it('provides owner and key', () => {
-            const items = [];
+            const items: AstNode[] = [];
             const { ast } = Parser.parse(`
                 sub main()
                     log = sub(message)
@@ -1078,7 +1078,7 @@ describe('astUtils visitors', () => {
             `);
             let printStatementCount = 0;
             let callExpressionCount = 0;
-            const calls = [];
+            const calls = [] as ExpressionStatement[];
             ast.walk(createVisitor({
                 PrintStatement: (astNode, parent, owner: Statement[], key) => {
                     printStatementCount++;

@@ -19,7 +19,7 @@ describe('AstNode', () => {
         program = new Program({
             rootDir: rootDir,
             stagingDir: stagingDir
-        });
+        } as any);
         program.createSourceScope(); //ensure source scope is created
     });
     afterEach(() => {

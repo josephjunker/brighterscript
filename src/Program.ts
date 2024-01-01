@@ -3,7 +3,7 @@ import * as fsExtra from 'fs-extra';
 import * as path from 'path';
 import type { CodeAction, CompletionItem, Position, Range, SignatureInformation, Location } from 'vscode-languageserver';
 import { CompletionItemKind } from 'vscode-languageserver';
-import type { BsConfig } from './BsConfig';
+import type { BsConfig, FinalizedBsConfig } from './BsConfig';
 import { Scope } from './Scope';
 import { DiagnosticMessages } from './DiagnosticMessages';
 import { BrsFile } from './files/BrsFile';
@@ -60,20 +60,18 @@ export class Program {
         /**
          * The root directory for this program
          */
-        public options: BsConfig,
+        public options: FinalizedBsConfig,
         logger?: Logger,
         plugins?: PluginInterface
     ) {
         this.options = util.normalizeConfig(options);
-        this.logger = logger || new Logger(options.logLevel as LogLevel);
-        this.plugins = plugins || new PluginInterface([], { logger: this.logger });
+        this.logger = logger ?? new Logger(options.logLevel as LogLevel);
+        this.plugins = plugins ?? new PluginInterface([], { logger: this.logger });
 
         //inject the bsc plugin as the first plugin in the stack.
         this.plugins.addFirst(new BscPlugin());
 
-        //normalize the root dir path
-        this.options.rootDir = util.getRootDir(this.options);
-
+        this.globalScope = new Scope('global', this, 'scope:global');
         this.createGlobalScope();
     }
 
@@ -81,7 +79,6 @@ export class Program {
 
     private createGlobalScope() {
         //create the 'global' scope
-        this.globalScope = new Scope('global', this, 'scope:global');
         this.globalScope.attachDependencyGraph(this.dependencyGraph);
         this.scopes.global = this.globalScope;
         //hardcode the files list for global scope to only contain the global file
@@ -320,7 +317,7 @@ export class Program {
     /**
      * roku filesystem is case INsensitive, so find the scope by key case insensitive
      */
-    public getScopeByName(scopeName: string) {
+    public getScopeByName(scopeName: string): Scope | undefined {
         if (!scopeName) {
             return undefined;
         }
@@ -328,6 +325,9 @@ export class Program {
         //so it's safe to run the standardizePkgPath method
         scopeName = s`${scopeName}`;
         let key = Object.keys(this.scopes).find(x => x.toLowerCase() === scopeName.toLowerCase());
+        if (key === undefined) {
+            return undefined;
+        }
         return this.scopes[key];
     }
 
@@ -495,8 +495,8 @@ export class Program {
      * @param rootDir must be a pre-normalized path
      */
     private getPaths(fileParam: string | FileObj | { srcPath?: string; pkgPath?: string }, rootDir: string) {
-        let srcPath: string;
-        let pkgPath: string;
+        let srcPath: string | undefined;
+        let pkgPath: string | undefined;
 
         assert.ok(fileParam, 'fileParam is required');
 
@@ -630,8 +630,11 @@ export class Program {
             if (scope) {
                 this.plugins.emit('beforeScopeDispose', scope);
                 scope.dispose();
+
                 //notify dependencies of this scope that it has been removed
-                this.dependencyGraph.remove(scope.dependencyGraphKey);
+                //justification: `remove` can handle `undefined` gracefully.
+                // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+                this.dependencyGraph.remove(scope.dependencyGraphKey!);
                 delete this.scopes[file.pkgPath];
                 this.plugins.emit('afterScopeDispose', scope);
             }
@@ -777,15 +780,16 @@ export class Program {
      * @param file the file
      */
     public getScopesForFile(file: XmlFile | BrsFile | string) {
-        if (typeof file === 'string') {
-            file = this.getFile(file);
+        let innerFile: XmlFile | BrsFile | string | undefined = file;
+        if (typeof innerFile === 'string') {
+            innerFile = this.getFile(innerFile);
         }
         let result = [] as Scope[];
-        if (file) {
+        if (innerFile) {
             for (let key in this.scopes) {
                 let scope = this.scopes[key];
 
-                if (scope.hasFile(file)) {
+                if (scope.hasFile(innerFile)) {
                     result.push(scope);
                 }
             }
@@ -840,7 +844,7 @@ export class Program {
         let funcNames = new Set<string>();
         let currentScope = scope;
         while (isXmlScope(currentScope)) {
-            for (let name of currentScope.xmlFile.ast.component.api?.functions.map((f) => f.name) ?? []) {
+            for (let name of currentScope.xmlFile.ast.component?.api?.functions.map((f) => f.name) ?? []) {
                 if (!filterName || name === filterName) {
                     funcNames.add(name);
                 }
@@ -941,7 +945,7 @@ export class Program {
      */
     public getHover(srcPath: string, position: Position): Hover[] {
         let file = this.getFile(srcPath);
-        let result: Hover[];
+        let result: Hover[] | undefined;
         if (file) {
             const event = {
                 program: this,
@@ -1006,7 +1010,7 @@ export class Program {
     }
 
     public getSignatureHelp(filepath: string, position: Position): SignatureInfoObj[] {
-        let file: BrsFile = this.getFile(filepath);
+        let file: BrsFile | undefined = this.getFile(filepath);
         if (!file || !isBrsFile(file)) {
             return [];
         }
@@ -1100,7 +1104,9 @@ export class Program {
         }
         const { entries, astEditor } = this.beforeProgramTranspile(fileMap, this.options.stagingDir);
         const result = this._getTranspiledFileContents(
-            this.getFile(filePath)
+            //justification: our callers shoud/do check whether the file path exists before they call this method
+            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion, @typescript-eslint/no-unnecessary-type-assertion
+            this.getFile(filePath)!
         );
         this.afterProgramTranspile(entries, astEditor);
         return result;
@@ -1130,7 +1136,7 @@ export class Program {
         const result = file.transpile();
 
         //generate the typedef if enabled
-        let typedef: string;
+        let typedef: string | undefined;
         if (isBrsFile(file) && this.options.emitDefinitions) {
             typedef = file.getTypedef();
         }
@@ -1207,7 +1213,7 @@ export class Program {
 
         const processedFiles = new Set<string>();
 
-        const transpileFile = async (srcPath: string, outputPath?: string) => {
+        const transpileFile = async (srcPath: string, outputPath: string) => {
             //find the file in the program
             const file = this.getFile(srcPath);
             //mark this file as processed so we don't process it more than once
@@ -1215,6 +1221,11 @@ export class Program {
 
             //skip transpiling typedef files
             if (isBrsFile(file) && file.isTypedef) {
+                return;
+            }
+
+            // If the file couldn't be retrieved with `getFile`, skip it.
+            if (file === undefined) {
                 return;
             }
 
@@ -1349,7 +1360,7 @@ export class Program {
         return files;
     }
 
-    private _manifest: Map<string, string>;
+    private _manifest: Map<string, string> | undefined;
 
     /**
      * Modify a parsed manifest map by reading `bs_const` and injecting values from `options.manifest.bs_const`
@@ -1427,6 +1438,6 @@ export interface FileTranspileResult {
     srcPath: string;
     pkgPath: string;
     code: string;
-    map: SourceMapGenerator;
-    typedef: string;
+    map?: SourceMapGenerator;
+    typedef?: string;
 }

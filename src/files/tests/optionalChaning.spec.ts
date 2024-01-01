@@ -18,7 +18,7 @@ describe('optional chaining', () => {
         program = new Program({
             rootDir: rootDir,
             stagingDir: stagingDir
-        });
+        } as any);
     });
     afterEach(() => {
         sinon.restore();

@@ -11,7 +11,7 @@ describe('ForEachStatement', () => {
     let testTranspile = getTestTranspile(() => [program, rootDir]);
 
     beforeEach(() => {
-        program = new Program({ rootDir: rootDir, sourceMap: true });
+        program = new Program({ rootDir: rootDir, sourceMap: true } as any);
     });
     afterEach(() => {
         sinon.restore();

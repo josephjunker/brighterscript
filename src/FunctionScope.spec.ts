@@ -9,7 +9,7 @@ describe('FunctionScope', () => {
     let rootDir = process.cwd();
     let program: Program;
     beforeEach(() => {
-        program = new Program({ rootDir: rootDir });
+        program = new Program({ rootDir: rootDir } as any);
         scope = new FunctionScope(null as any as FunctionExpression);
     });
 

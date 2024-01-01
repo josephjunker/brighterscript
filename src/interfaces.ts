@@ -342,7 +342,7 @@ export type Editor = Pick<AstEditor, 'addToArray' | 'hasChanges' | 'removeFromAr
 export interface BeforeFileTranspileEvent<TFile extends BscFile = BscFile> {
     program: Program;
     file: TFile;
-    outputPath: string;
+    outputPath?: string;
     /**
      * An editor that can be used to transform properties or arrays. Once the `afterFileTranspile` event has fired, these changes will be reverted,
      * restoring the objects to their prior state. This is useful for changing code right before a file gets transpiled, but when you don't want
@@ -357,7 +357,7 @@ export interface AfterFileTranspileEvent<TFile extends BscFile = BscFile> {
      */
     program: Program;
     file: TFile;
-    outputPath: string;
+    outputPath?: string;
     /**
      * The resulting transpiled file contents
      */

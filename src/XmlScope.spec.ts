@@ -15,7 +15,7 @@ describe('XmlScope', () => {
     beforeEach(() => {
         program = new Program({
             rootDir: rootDir
-        });
+        } as any);
         sinon.restore();
     });
 
@@ -34,7 +34,7 @@ describe('XmlScope', () => {
             let scope = program.getScopeByName(parentXmlFile.pkgPath);
 
             //should default to global scope
-            expect(scope.getParentScope()).to.equal(program.globalScope);
+            expect(scope!.getParentScope()).to.equal(program.globalScope);
 
             let childXmlFile = program.setFile<XmlFile>('components/child.xml', trim`
                 <?xml version="1.0" encoding="utf-8" ?>
@@ -93,7 +93,7 @@ describe('XmlScope', () => {
 
     describe('validate', () => {
         it('adds an error when an interface function cannot be found', () => {
-            program = new Program({ rootDir: rootDir });
+            program = new Program({ rootDir: rootDir } as any);
 
             program.setFile('components/child.xml', trim`
                 <?xml version="1.0" encoding="utf-8" ?>
@@ -136,7 +136,7 @@ describe('XmlScope', () => {
         });
 
         it('adds an error when an interface field is invalid', () => {
-            program = new Program({ rootDir: rootDir });
+            program = new Program({ rootDir: rootDir } as any);
 
             program.setFile('components/child.xml', trim`
                 <?xml version="1.0" encoding="utf-8" ?>

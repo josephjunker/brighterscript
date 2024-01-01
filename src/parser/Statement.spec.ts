@@ -17,7 +17,7 @@ describe('Statement', () => {
     beforeEach(() => {
         program = new Program({
             cwd: tempDir
-        });
+        } as any);
     });
     describe('EmptyStatement', () => {
         it('returns empty array for transpile', () => {
@@ -72,7 +72,7 @@ describe('Statement', () => {
     describe('CommentStatement', () => {
         describe('walk', () => {
             it('skips visitor if canceled', () => {
-                const comment = new CommentStatement([]);
+                const comment = new CommentStatement(undefined as any, []);
                 const cancel = new CancellationTokenSource();
                 cancel.cancel();
                 comment.walk(() => {

@@ -36,7 +36,7 @@ describe('Program', () => {
         program = new Program({
             rootDir: rootDir,
             stagingDir: stagingDir
-        });
+        } as any);
         program.createSourceScope(); //ensure source scope is created
     });
     afterEach(() => {
@@ -128,7 +128,7 @@ describe('Program', () => {
         it('works with different cwd', () => {
             let projectDir = s`${tempDir}/project2`;
             fsExtra.ensureDirSync(projectDir);
-            program = new Program({ cwd: projectDir });
+            program = new Program({ cwd: projectDir } as any);
             program.setFile('source/lib.brs', 'function main()\n    print "hello world"\nend function');
             // await program.reloadFile('source/lib.brs', `'this is a comment`);
             //if we made it to here, nothing exploded, so the test passes
@@ -137,25 +137,25 @@ describe('Program', () => {
         it(`adds files in the source folder to the 'source' scope`, () => {
             expect(program.getScopeByName('source')).to.exist;
             //no files in source scope
-            expect(program.getScopeByName('source').getOwnFiles().length).to.equal(0);
+            expect(program.getScopeByName('source')!.getOwnFiles().length).to.equal(0);
 
             //add a new source file
             program.setFile('source/main.brs', '');
             //file should be in source scope now
-            expect(program.getScopeByName('source').getFile('source/main.brs')).to.exist;
+            expect(program.getScopeByName('source')!.getFile('source/main.brs')).to.exist;
 
             //add an unreferenced file from the components folder
             program.setFile('components/component1/component1.brs', '');
 
             //source scope should have the same number of files
-            expect(program.getScopeByName('source').getFile('source/main.brs')).to.exist;
-            expect(program.getScopeByName('source').getFile(`${rootDir}/components/component1/component1.brs`)).not.to.exist;
+            expect(program.getScopeByName('source')!.getFile('source/main.brs')).to.exist;
+            expect(program.getScopeByName('source')!.getFile(`${rootDir}/components/component1/component1.brs`)).not.to.exist;
         });
 
         it('normalizes file paths', () => {
             program.setFile('source/main.brs', '');
 
-            expect(program.getScopeByName('source').getFile('source/main.brs')).to.exist;
+            expect(program.getScopeByName('source')!.getFile('source/main.brs')).to.exist;
 
             //shouldn't throw an exception because it will find the correct path after normalizing the above path and remove it
             try {
@@ -450,14 +450,14 @@ describe('Program', () => {
         });
 
         it('maintains correct callables list', () => {
-            let initialCallableCount = program.getScopeByName('source').getAllCallables().length;
+            let initialCallableCount = program.getScopeByName('source')!.getAllCallables().length;
             program.setFile('source/main.brs', `
                 sub DoSomething()
                 end sub
                 sub DoSomething()
                 end sub
             `);
-            expect(program.getScopeByName('source').getAllCallables().length).equals(initialCallableCount + 2);
+            expect(program.getScopeByName('source')!.getAllCallables().length).equals(initialCallableCount + 2);
             //set the file contents again (resetting the wasProcessed flag)
             program.setFile('source/main.brs', `
                 sub DoSomething()
@@ -465,9 +465,9 @@ describe('Program', () => {
                 sub DoSomething()
                 end sub
                 `);
-            expect(program.getScopeByName('source').getAllCallables().length).equals(initialCallableCount + 2);
+            expect(program.getScopeByName('source')!.getAllCallables().length).equals(initialCallableCount + 2);
             program.removeFile(`${rootDir}/source/main.brs`);
-            expect(program.getScopeByName('source').getAllCallables().length).equals(initialCallableCount);
+            expect(program.getScopeByName('source')!.getAllCallables().length).equals(initialCallableCount);
         });
 
         it('resets errors on revalidate', () => {
@@ -647,7 +647,7 @@ describe('Program', () => {
                 </component>
             `);
 
-            expect(program.getScopeByName('components/ChildScene.xml').getParentScope().name).to.equal(s`components/ParentScene.xml`);
+            expect(program.getScopeByName('components/ChildScene.xml')!.getParentScope()!.name).to.equal(s`components/ParentScene.xml`);
 
             //change the parent's name.
             program.setFile('components/ParentScene.xml', trim`
@@ -657,7 +657,7 @@ describe('Program', () => {
             `);
 
             //The child scope should no longer have the link to the parent scope, and should instead point back to global
-            expect(program.getScopeByName('components/ChildScene.xml').getParentScope().name).to.equal('global');
+            expect(program.getScopeByName('components/ChildScene.xml')!.getParentScope()!.name).to.equal('global');
         });
 
         it('creates a new scope for every added component xml', () => {
@@ -680,9 +680,9 @@ describe('Program', () => {
             `);
             program.setFile('components/component1.brs', '');
 
-            let scope = program.getScopeByName(`components/component1.xml`);
-            expect(scope.getFile('components/component1.xml').pkgPath).to.equal(s`components/component1.xml`);
-            expect(scope.getFile('components/component1.brs').pkgPath).to.equal(s`components/component1.brs`);
+            let scope = program.getScopeByName(`components/component1.xml`)!;
+            expect(scope.getFile('components/component1.xml')!.pkgPath).to.equal(s`components/component1.xml`);
+            expect(scope.getFile('components/component1.brs')!.pkgPath).to.equal(s`components/component1.brs`);
         });
 
         it('adds xml file to files map', () => {
@@ -765,7 +765,7 @@ describe('Program', () => {
             `);
             program.validate();
             expectZeroDiagnostics(program);
-            expect(program.getScopeByName(xmlFile.pkgPath).getFile(brsPath)).to.exist;
+            expect(program.getScopeByName(xmlFile.pkgPath)!.getFile(brsPath)).to.exist;
         });
 
         it('reloads referenced fles when xml file changes', () => {
@@ -780,7 +780,7 @@ describe('Program', () => {
             `);
             program.validate();
             expectZeroDiagnostics(program);
-            expect(program.getScopeByName(xmlFile.pkgPath).getFile('components/component1.brs')).not.to.exist;
+            expect(program.getScopeByName(xmlFile.pkgPath)!.getFile('components/component1.brs')).not.to.exist;
 
             //reload the xml file contents, adding a new script reference.
             xmlFile = program.setFile('components/component1.xml', trim`
@@ -790,7 +790,7 @@ describe('Program', () => {
                 </component>
             `);
 
-            expect(program.getScopeByName(xmlFile.pkgPath).getFile('components/component1.brs')).to.exist;
+            expect(program.getScopeByName(xmlFile.pkgPath)!.getFile('components/component1.brs')).to.exist;
         });
     });
 
@@ -1561,7 +1561,7 @@ describe('Program', () => {
             `);
 
             //the component scope should only have the xml file
-            expect(program.getScopeByName(xmlFile.pkgPath).getOwnFiles().length).to.equal(1);
+            expect(program.getScopeByName(xmlFile.pkgPath)!.getOwnFiles().length).to.equal(1);
 
             //create the lib file
             let libFile = program.setFile('source/lib.brs', `'comment`);
@@ -1573,7 +1573,7 @@ describe('Program', () => {
                     <script type="text/brightscript" uri="pkg:/source/lib.brs" />
                 </component>
             `);
-            let scope = program.getScopeByName(xmlFile.pkgPath);
+            let scope = program.getScopeByName(xmlFile.pkgPath)!;
             //the component scope should have the xml file AND the lib file
             expect(scope.getOwnFiles().length).to.equal(2);
             expect(scope.getFile(xmlFile.srcPath)).to.exist;
@@ -1587,7 +1587,7 @@ describe('Program', () => {
             `);
 
             //the scope should again only have the xml file loaded
-            expect(program.getScopeByName(xmlFile.pkgPath).getOwnFiles().length).to.equal(1);
+            expect(program.getScopeByName(xmlFile.pkgPath)!.getOwnFiles().length).to.equal(1);
             expect(program.getScopeByName(xmlFile.pkgPath)).to.exist;
         });
     });
@@ -1899,14 +1899,14 @@ describe('Program', () => {
                 beforeFileTranspile: (event) => {
                     if (isBrsFile(event.file)) {
                         //add lib1
-                        if (event.outputPath.endsWith('main.brs')) {
+                        if (event.outputPath!.endsWith('main.brs')) {
                             event.program.setFile('source/lib1.bs', `
                                 sub lib1()
                                 end sub
                             `);
                         }
                         //add lib2 (this should happen during the next cycle of "catch missing files" cycle
-                        if (event.outputPath.endsWith('main.brs')) {
+                        if (event.outputPath!.endsWith('main.brs')) {
                             //add another file
                             event.program.setFile('source/lib2.bs', `
                                 sub lib2()
@@ -2117,7 +2117,7 @@ describe('Program', () => {
                 stagingDir: stagingDir,
                 sourceRoot: sourceRoot,
                 sourceMap: true
-            });
+            } as any);
             program.setFile('source/main.brs', `
                 sub main()
                 end sub
@@ -2143,7 +2143,7 @@ describe('Program', () => {
                 stagingDir: stagingDir,
                 sourceRoot: sourceRoot,
                 sourceMap: true
-            });
+            } as any);
             program.setFile('source/main.bs', `
                 sub main()
                 end sub
@@ -2984,7 +2984,7 @@ describe('Program', () => {
             `);
             program.options = {
                 rootDir: tempDir
-            };
+            } as any;
         });
 
         afterEach(() => {
@@ -2993,7 +2993,7 @@ describe('Program', () => {
         });
 
         it('loads the manifest from project root', () => {
-            let manifest = program.getManifest();
+            let manifest = program.getManifest()!;
             testCommonManifestValues(manifest);
             expect(manifest.get('bs_const')).to.equal('DEBUG=false');
         });
@@ -3014,7 +3014,7 @@ describe('Program', () => {
                 src: `${tempDir}/someDeepDir/manifest`,
                 dest: 'manifest'
             });
-            let manifest = program.getManifest();
+            let manifest = program.getManifest()!;
             testCommonManifestValues(manifest);
             expect(manifest.get('bs_const')).to.equal('DEBUG=false');
         });
@@ -3026,7 +3026,7 @@ describe('Program', () => {
                     NEW_VALUE: false
                 }
             };
-            let manifest = program.getManifest();
+            let manifest = program.getManifest()!;
             testCommonManifestValues(manifest);
             expect(manifest.get('bs_const')).to.equal('DEBUG=false;NEW_VALUE=false');
         });
@@ -3038,7 +3038,7 @@ describe('Program', () => {
                     DEBUG: true
                 }
             };
-            let manifest = program.getManifest();
+            let manifest = program.getManifest()!;
             testCommonManifestValues(manifest);
             expect(manifest.get('bs_const')).to.equal('DEBUG=true');
         });
@@ -3050,7 +3050,7 @@ describe('Program', () => {
                     DEBUG: null
                 }
             };
-            let manifest = program.getManifest();
+            let manifest = program.getManifest()!;
             testCommonManifestValues(manifest);
             expect(manifest.get('bs_const')).to.equal('');
         });
@@ -3065,7 +3065,7 @@ describe('Program', () => {
                 build_version=0
                 supports_input_launch=1
             `);
-            let manifest = program.getManifest();
+            let manifest = program.getManifest()!;
             testCommonManifestValues(manifest);
             expect(manifest.get('bs_const')).to.equal('');
         });

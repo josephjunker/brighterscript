@@ -35,3 +35,11 @@ export class BrsTranspileState extends TranspileState {
      */
     public editor = new AstEditor();
 }
+
+/**
+ * A wrapper around BrsTranspileState for use inside of ClassMethodStatements, which need to know
+ * that their current transpile state contains a classStatement field
+ */
+export interface ClassBrsTranspileState extends BrsTranspileState {
+    classStatement: ClassStatement;
+}

@@ -42,7 +42,7 @@ describe('util', () => {
 
     describe('diagnosticIsSuppressed', () => {
         it('does not crash when diagnostic is missing location information', () => {
-            const program = new Program({});
+            const program = new Program({} as any);
             const file = program.setFile('source/main.brs', '');
             const diagnostic: BsDiagnostic = {
                 file: file,

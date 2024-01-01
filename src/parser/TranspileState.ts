@@ -1,6 +1,6 @@
 import { SourceNode } from 'source-map';
 import type { Range } from 'vscode-languageserver';
-import type { BsConfig } from '../BsConfig';
+import type { BsConfig, FinalizedBsConfig } from '../BsConfig';
 
 /**
  * Holds the state of a transpile operation as it works its way through the transpile process
@@ -13,7 +13,7 @@ export class TranspileState {
          * If the file resides outside of rootDir, then no changes will be made to this path.
          */
         public srcPath: string,
-        public options: BsConfig
+        public options: FinalizedBsConfig
     ) {
         this.srcPath = srcPath;
 
